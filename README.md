@@ -1,3 +1,4 @@
-# Research Village - Bryant University 2020
 
-## Predicting length of stay at RI Hospital
+# Predicting length of stay at RI Hospital
+
+We study the performances of multiple predictive models in predicting the length of stay at RI Hospitals. 
