@@ -13,6 +13,12 @@ from sklearn.model_selection import train_test_split
 from sklearn import preprocessing, metrics
 import random
 
+#Preprocessing pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.datasets import fetch_openml
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 #Some balancing types
 from imblearn.under_sampling import *
@@ -28,19 +34,54 @@ from tqdm import tqdm
 import cv2
 
 #%% Data loading and preprocessing
-df = pd.read_csv('../df_clean.csv')
-df = df.dropna()
-df = df.drop(['yod', 'yoa', 'b_wt'], axis=1)
+INCLUDE_b_wt = True
 
-datatypes = {'age':'int8', 'sex':'category', 'ethnic':'category', 'pt_state':'category', 'raceethn':'category',
-             'campus':'category', 'admtype':'category', 'payer':'category', 'pay_ub92':'category',
-             'provider':'category', 'asource':'category', 'moa':'int8', 'service':'category', 'diag_adm':'category',
-             'los':'int8', 'los_binary':'category'}
+numeric_features = ['age', 'los', 'b_wt', 'moa']
+numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())])
 
-df = df.astype(dtype=datatypes)
+categorical_features = ['sex', 'ethnic', 'pt_state', 'raceethn', 'campus', 'admtype', 'payer', 'pay_ub92', 
+                        'provider', 'asource', 'service', 'diag_adm', 'los_binary']
+categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))])
 
-df['age'] = preprocessing.scale(df['age'])
-df['moa'] = preprocessing.scale(df['moa'])
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)])
+
+if INCLUDE_b_wt:
+    df = pd.read_csv('../df_clean_v2_b_wt_fixed.csv')
+    df = df.dropna()
+    df = df.drop(['yod', 'yoa'], axis=1)
+    
+    datatypes = {'age':'int8', 'sex':'category', 'ethnic':'category', 'pt_state':'category', 'raceethn':'category',
+                 'campus':'category', 'admtype':'category', 'payer':'category', 'pay_ub92':'category',
+                 'provider':'category', 'asource':'category', 'moa':'int8', 'service':'category', 'diag_adm':'category',
+                 'los':'int8', 'los_binary':'category', 'b_wt':'int16'}
+    
+    df = df.astype(dtype=datatypes)
+    
+    df['age'] = preprocessing.scale(df['age'])
+    df['moa'] = preprocessing.scale(df['moa'])
+    df['b_wt'] = preprocessing.scale(df['b_wt'])
+    
+else:
+    df = pd.read_csv('../df_clean.csv')
+    df = df.dropna()
+    df = df.drop(['yod', 'yoa', 'b_wt'], axis=1)
+    
+    datatypes = {'age':'int8', 'sex':'category', 'ethnic':'category', 'pt_state':'category', 'raceethn':'category',
+                 'campus':'category', 'admtype':'category', 'payer':'category', 'pay_ub92':'category',
+                 'provider':'category', 'asource':'category', 'moa':'int8', 'service':'category', 'diag_adm':'category',
+                 'los':'int8', 'los_binary':'category'}
+
+    df = df.astype(dtype=datatypes)
+    
+    df['age'] = preprocessing.scale(df['age'])
+    df['moa'] = preprocessing.scale(df['moa'])
 
 #%% Data splitting, balancing, and result calculating functions
 def get_split(x, y, test_size=0.05, balancer=RandomUnderSampler):
@@ -240,7 +281,7 @@ with torch.no_grad():
         #     total +=1
 
 # print(f'Accuracy: {correct/total}')
-res = get_results(list(balanced_data[3]), y_pred_ints)
+res = get_results(list(balanced_data[3]), y_pred)
 
 #%% Plotting loss
 step = 8
@@ -260,6 +301,22 @@ plt.title(f'Moving Average of Loss - Window={window_size}')
 
 #%% Testing
 
-pat = re.compile("b'(\d{4})'")
-ex = "b'5102'"
-m = pat.match(ex)
+d = {'5': 110096,
+             '8': 105616,
+             '9': 221948,
+             '1': 154721,
+             '0': 365763,
+             '7': 104125,
+             '6': 104850,
+             '2': 104656,
+             '3': 106024,
+             '4': 162591}
+
+o = {}
+for i in sorted(d):
+    o[i] = d[i]
+
+asd = sorted(d)
+dsa = [d[i] for i in asd]
+plt.bar(asd, dsa)
+plt.show()
